@@ -1,0 +1,109 @@
+set number
+set relativenumber
+set incsearch
+set wrap
+set smartindent
+set autoindent
+set noexpandtab
+set tabstop=8
+set shiftwidth=8
+set softtabstop=8
+set wrapscan
+set showmatch
+set matchtime=2
+set ruler
+set incsearch
+set ignorecase
+set hlsearch
+set noswapfile
+set undofile
+set undodir=~/.vim/undo
+set ttyfast
+set lazyredraw
+set clipboard=unnamed,unnamedplus
+set encoding=utf-8
+set guifont=SF_Mono:h9
+set t_Co=256
+"set termguicolors
+set number
+set hidden
+set backspace=indent,eol,start
+set incsearch
+set encoding=utf-8
+set guioptions-=T
+set guioptions-=m 
+set guioptions-=r
+set guioptions-=L
+set guioptions-=b
+syntax enable
+filetype plugin indent on
+
+call plug#begin()
+
+"Plug 'vimsence/vimsence'
+Plug 'preservim/nerdtree'
+Plug 'jiangmiao/auto-pairs'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'rhysd/vim-clang-format'
+Plug 'preservim/nerdtree'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'morhetz/gruvbox'
+Plug 'mhinz/vim-startify'
+Plug 'neoclide/coc-snippets'
+Plug 'ericbn/vim-solarized'
+Plug 'rose-pine/vim'
+
+call plug#end()
+
+let g:clang_format#style_options = {
+    \ "BasedOnStyle": "Google",
+    \ "IndentWidth": 4,
+    \ "ColumnLimit": 100,
+    \ }
+
+autocmd BufWritePre *.cpp,*.h,*.cc ClangFormat
+
+colorscheme rosepine_dawn
+
+inoremap <expr> <Tab> coc#pum#visible() ? coc#pum#confirm() : "\<Tab>"
+
+nnoremap <F12> :w<CR>:!g++ -std=c++26 -O2 -Wall -Wextra -Wshadow -Wconversion -Wfloat-equal -o %:r.exe % && %:r.exe <CR>
+
+function! CompileAndRunCpp()
+    let l:filename = expand('%:t:r')
+    let l:filepath = expand('%:p')
+    let l:output = 'main.exe'
+
+    let l:compile_cmd = printf('g++ -std=c++20 -O2 -Wall "%s" -o "%s"', l:filepath, l:output)
+    let l:status = system(l:compile_cmd)
+
+    if v:shell_error != 0
+        echo '❌ Compilation failed.'
+        return
+    endif
+
+    let l:width = float2nr(&columns * 0.8)
+    let l:height = float2nr(&lines * 0.8)
+    let l:row = float2nr((&lines - l:height) / 2)
+    let l:col = float2nr((&columns - l:width) / 2)
+
+    let l:buf = nvim_create_buf(v:false, v:true)
+    call nvim_open_win(l:buf, v:true, {
+        \ 'relative': 'editor',
+        \ 'row': l:row,
+        \ 'col': l:col,
+        \ 'width': l:width,
+        \ 'height': l:height,
+        \ 'style': 'minimal',
+        \ 'border': 'rounded'
+        \ })
+
+    call termopen(printf('cmd.exe /C "%s & echo. & echo [Press any key to close] & pause"', l:output), {
+        \ 'on_exit': {-> execute('bd! ' . l:buf)}
+        \ })
+
+    startinsert
+endfunction
+
+nnoremap <silent> <F1> :call CompileAndRunCpp()<CR>
